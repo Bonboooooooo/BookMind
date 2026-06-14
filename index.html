@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>BookMind 图书查询平台</title>
+    <style>
+        body {
+            font-family: Arial, "Microsoft YaHei", sans-serif;
+            margin: 0;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 60px auto;
+            background: #ffffff;
+            padding: 35px;
+            border-radius: 14px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        input {
+            width: 320px;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #4a90e2;
+        }
+
+        button {
+            padding: 12px 26px;
+            font-size: 16px;
+            background: #4a90e2;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #357abd;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            min-height: 80px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+            text-align: left;
+        }
+
+        .book-card {
+            padding: 14px;
+            margin-bottom: 12px;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+        }
+
+        .book-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 6px;
+        }
+
+        .book-info {
+            color: #666;
+            line-height: 1.7;
+        }
+
+        .tips {
+            margin-top: 25px;
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .search-box {
+                flex-direction: column;
+            }
+
+            input {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .container {
+                margin: 30px auto;
+                padding: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BookMind 图书查询平台</h1>
+        <p class="subtitle">输入书名、作者或关键词，快速查询图书信息</p>
+
+        <div class="search-box">
+            <input type="text" id="bookName" placeholder="请输入书名或作者">
+            <button onclick="searchBook()">查询</button>
+        </div>
+
+        <div id="result">
+            请输入关键词后点击查询。
+        </div>
+
+        <div class="tips">
+            当前版本为前端演示版，后续将接入数据库和后端接口。
+        </div>
+    </div>
+
+    <script>
+        // 临时测试数据：用于在没有后端接口时测试页面效果
+        const mockBooks = [
+            {
+                title: "活着",
+                author: "余华",
+                publisher: "作家出版社",
+                category: "文学"
+            },
+            {
+                title: "三体",
+                author: "刘慈欣",
+                publisher: "重庆出版社",
+                category: "科幻"
+            },
+            {
+                title: "Python编程：从入门到实践",
+                author: "Eric Matthes",
+                publisher: "人民邮电出版社",
+                category: "计算机"
+            },
+            {
+                title: "平凡的世界",
+                author: "路遥",
+                publisher: "北京十月文艺出版社",
+                category: "文学"
+            }
+        ];
+
+        function searchBook() {
+            const bookName = document.getElementById("bookName").value.trim();
+            const resultDiv = document.getElementById("result");
+
+            if (!bookName) {
+                alert("请输入书名或作者");
+                return;
+            }
+
+            resultDiv.innerText = "查询中...";
+
+            // 现在先使用前端假数据查询，等你后端接口做好后，再改成 fetch 请求
+            const results = mockBooks.filter(book => {
+                return book.title.includes(bookName) ||
+                       book.author.includes(bookName) ||
+                       book.category.includes(bookName) ||
+                       book.publisher.includes(bookName);
+            });
+
+            renderBooks(results);
+        }
+
+        function renderBooks(books) {
+            const resultDiv = document.getElementById("result");
+
+            if (!books || books.length === 0) {
+                resultDiv.innerText = "未找到相关书籍";
+                return;
+            }
+
+            resultDiv.innerHTML = books.map(book => `
+                <div class="book-card">
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-info">
+                        作者：${book.author || "未知"}<br>
+                        出版社：${book.publisher || "未知"}<br>
+                        分类：${book.category || "未分类"}
+                    </div>
+                </div>
+            `).join("");
+        }
+    </script>
+</body>
+</html>
