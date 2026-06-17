@@ -72,12 +72,12 @@
             background: #1557b0;
         }
 
+        /* ===== 新增筛选框样式 ===== */
         .filter-box {
             display: flex;
             justify-content: center;
             gap: 12px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
         }
 
         .filter-box select {
@@ -179,16 +179,6 @@
                 width: 100%;
             }
 
-            .filter-box {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .filter-box select {
-                width: 100%;
-                min-width: unset;
-            }
-
             .container {
                 margin: 20px auto;
                 padding: 0 10px;
@@ -203,11 +193,13 @@
             <p>基于阿里云生态的图书查询与数据可视化系统</p>
         </div>
 
+        <!-- 搜索框 -->
         <div class="search-box">
             <input type="text" id="keyword" placeholder="输入书名、作者、出版社或关键词">
             <button onclick="searchBooks()">查询</button>
         </div>
 
+        <!-- ===== 新增筛选框 ===== -->
         <div class="filter-box">
             <select id="filterCategory">
                 <option value="">全部分类</option>
@@ -229,12 +221,13 @@
         // 你的函数计算接口地址，替换成你自己的
         const API_BASE = "https://bookmind-yzujqqnphx.cn-hangzhou.fcapp.run";
 
-        // ========== 新增：加载筛选选项 ==========
+        // ===== 加载筛选选项 =====
         function loadFilters() {
             fetch(API_BASE + "/books?keyword=")
                 .then(function(response) { return response.json(); })
                 .then(function(result) {
                     if (result.success && result.data) {
+                        // 提取所有不重复的分类
                         var categories = {};
                         var publishers = {};
                         var countries = {};
@@ -256,7 +249,6 @@
 
         function fillSelect(id, items) {
             var select = document.getElementById(id);
-            // 保留第一个“全部”选项
             for (var i = 0; i < items.length; i++) {
                 var opt = document.createElement("option");
                 opt.value = items[i];
@@ -265,7 +257,7 @@
             }
         }
 
-        // ========== 修改后的 searchBooks ==========
+        // ===== 修改后的 searchBooks（支持筛选） =====
         function searchBooks() {
             var keyword = document.getElementById("keyword").value.trim();
             var category = document.getElementById("filterCategory").value;
@@ -308,7 +300,7 @@
                 });
         }
 
-        // ========== 渲染书籍（保持不变） ==========
+        // ===== 渲染书籍（保持不变） =====
         function renderBooks(books, total) {
             const resultDiv = document.getElementById("result");
 
@@ -339,7 +331,7 @@
             resultDiv.innerHTML = html;
         }
 
-        // ========== 页面加载时调用 ==========
+        // ===== 页面加载完成后加载筛选选项 =====
         loadFilters();
 
         // 回车键触发查询
