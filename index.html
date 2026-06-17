@@ -72,6 +72,28 @@
             background: #1557b0;
         }
 
+        .filter-box {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-box select {
+            padding: 10px 14px;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            min-width: 160px;
+            outline: none;
+        }
+
+        .filter-box select:focus {
+            border-color: #1a73e8;
+        }
+
         .result-area {
             background: #fff;
             padding: 24px;
@@ -157,6 +179,16 @@
                 width: 100%;
             }
 
+            .filter-box {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .filter-box select {
+                width: 100%;
+                min-width: unset;
+            }
+
             .container {
                 margin: 20px auto;
                 padding: 0 10px;
@@ -176,6 +208,18 @@
             <button onclick="searchBooks()">查询</button>
         </div>
 
+        <div class="filter-box">
+            <select id="filterCategory">
+                <option value="">全部分类</option>
+            </select>
+            <select id="filterPublisher">
+                <option value="">全部出版社</option>
+            </select>
+            <select id="filterCountry">
+                <option value="">全部国家</option>
+            </select>
+        </div>
+
         <div class="result-area" id="result">
             <div class="no-result">请输入关键词开始查询</div>
         </div>
@@ -185,41 +229,86 @@
         // 你的函数计算接口地址，替换成你自己的
         const API_BASE = "https://bookmind-yzujqqnphx.cn-hangzhou.fcapp.run";
 
-        function searchBooks() {
-            const keyword = document.getElementById("keyword").value.trim();
-            const resultDiv = document.getElementById("result");
+        // ========== 新增：加载筛选选项 ==========
+        function loadFilters() {
+            fetch(API_BASE + "/books?keyword=")
+                .then(function(response) { return response.json(); })
+                .then(function(result) {
+                    if (result.success && result.data) {
+                        var categories = {};
+                        var publishers = {};
+                        var countries = {};
+                        for (var i = 0; i < result.data.length; i++) {
+                            var b = result.data[i];
+                            if (b.category) categories[b.category] = true;
+                            if (b.publisher) publishers[b.publisher] = true;
+                            if (b.country) countries[b.country] = true;
+                        }
+                        fillSelect("filterCategory", Object.keys(categories).sort());
+                        fillSelect("filterPublisher", Object.keys(publishers).sort());
+                        fillSelect("filterCountry", Object.keys(countries).sort());
+                    }
+                })
+                .catch(function(err) {
+                    console.error("加载筛选选项失败", err);
+                });
+        }
 
-            if (!keyword) {
-                resultDiv.innerHTML = '<div class="no-result">请输入关键词</div>';
+        function fillSelect(id, items) {
+            var select = document.getElementById(id);
+            // 保留第一个“全部”选项
+            for (var i = 0; i < items.length; i++) {
+                var opt = document.createElement("option");
+                opt.value = items[i];
+                opt.textContent = items[i];
+                select.appendChild(opt);
+            }
+        }
+
+        // ========== 修改后的 searchBooks ==========
+        function searchBooks() {
+            var keyword = document.getElementById("keyword").value.trim();
+            var category = document.getElementById("filterCategory").value;
+            var publisher = document.getElementById("filterPublisher").value;
+            var country = document.getElementById("filterCountry").value;
+            var resultDiv = document.getElementById("result");
+
+            if (!keyword && !category && !publisher && !country) {
+                resultDiv.innerHTML = '<div class="no-result">请输入关键词或选择筛选条件</div>';
                 return;
             }
 
             resultDiv.innerHTML = '<div class="loading">查询中...</div>';
 
-            const apiUrl = API_BASE + "/books?keyword=" + encodeURIComponent(keyword);
+            var params = [];
+            if (keyword) params.push("keyword=" + encodeURIComponent(keyword));
+            if (category) params.push("category=" + encodeURIComponent(category));
+            if (publisher) params.push("publisher=" + encodeURIComponent(publisher));
+            if (country) params.push("country=" + encodeURIComponent(country));
+
+            var apiUrl = API_BASE + "/books?" + params.join("&");
 
             fetch(apiUrl)
                 .then(function(response) {
-                    if (!response.ok) {
-                        throw new Error("接口返回错误：" + response.status);
-                    }
+                    if (!response.ok) throw new Error("接口返回错误：" + response.status);
                     return response.json();
                 })
                 .then(function(result) {
                     if (result.success && result.data && result.data.length > 0) {
                         renderBooks(result.data, result.total);
-                    } else if (result.success && result.data && result.data.length === 0) {
-                        resultDiv.innerHTML = '<div class="no-result">未找到相关书籍，请尝试其他关键词</div>';
+                    } else if (result.success) {
+                        resultDiv.innerHTML = '<div class="no-result">未找到相关书籍</div>';
                     } else {
                         resultDiv.innerHTML = '<div class="error">查询失败：' + (result.message || "未知错误") + '</div>';
                     }
                 })
                 .catch(function(error) {
-                    resultDiv.innerHTML = '<div class="error">查询失败，请检查网络或后端接口是否正常</div>';
+                    resultDiv.innerHTML = '<div class="error">查询失败，请检查网络或后端接口</div>';
                     console.error("查询错误：", error);
                 });
         }
 
+        // ========== 渲染书籍（保持不变） ==========
         function renderBooks(books, total) {
             const resultDiv = document.getElementById("result");
 
@@ -250,7 +339,10 @@
             resultDiv.innerHTML = html;
         }
 
-        // 回车键也能触发查询
+        // ========== 页面加载时调用 ==========
+        loadFilters();
+
+        // 回车键触发查询
         document.getElementById("keyword").addEventListener("keypress", function(e) {
             if (e.key === "Enter") {
                 searchBooks();
