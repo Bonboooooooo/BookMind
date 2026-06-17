@@ -4,33 +4,38 @@
     <meta charset="UTF-8">
     <title>BookMind 图书查询平台</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, "Microsoft YaHei", sans-serif;
-            margin: 0;
-            background: #f5f7fa;
+            background: #f0f2f5;
             color: #333;
         }
 
         .container {
             width: 90%;
-            max-width: 900px;
-            margin: 60px auto;
-            background: #ffffff;
-            padding: 35px;
-            border-radius: 14px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            max-width: 960px;
+            margin: 40px auto;
         }
 
-        h1 {
+        .header {
             text-align: center;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
             margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #1a73e8;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
         }
 
         .search-box {
@@ -40,68 +45,103 @@
             margin-bottom: 25px;
         }
 
-        input {
-            width: 320px;
-            padding: 12px;
+        .search-box input {
+            width: 360px;
+            padding: 12px 16px;
             font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
             outline: none;
         }
 
-        input:focus {
-            border-color: #4a90e2;
+        .search-box input:focus {
+            border-color: #1a73e8;
         }
 
-        button {
-            padding: 12px 26px;
+        .search-box button {
+            padding: 12px 28px;
             font-size: 16px;
-            background: #4a90e2;
+            background: #1a73e8;
             color: #fff;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
         }
 
-        button:hover {
-            background: #357abd;
+        .search-box button:hover {
+            background: #1557b0;
         }
 
-        #result {
-            margin-top: 20px;
-            padding: 20px;
-            min-height: 80px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background: #fafafa;
-            text-align: left;
+        .result-area {
+            background: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            min-height: 100px;
+        }
+
+        .result-info {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
         }
 
         .book-card {
-            padding: 14px;
+            padding: 16px;
             margin-bottom: 12px;
-            background: #ffffff;
-            border: 1px solid #e5e5e5;
+            border: 1px solid #e8e8e8;
             border-radius: 8px;
+            background: #fafbfc;
+        }
+
+        .book-card:hover {
+            background: #f0f4ff;
+            border-color: #c0d4f0;
         }
 
         .book-title {
             font-size: 18px;
             font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 6px;
+            color: #1a73e8;
+            margin-bottom: 8px;
         }
 
         .book-info {
-            color: #666;
-            line-height: 1.7;
+            color: #555;
+            line-height: 1.8;
+            font-size: 14px;
         }
 
-        .tips {
-            margin-top: 25px;
-            font-size: 14px;
+        .book-info span {
+            margin-right: 20px;
+        }
+
+        .book-desc {
             color: #888;
+            font-size: 13px;
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+
+        .no-result {
             text-align: center;
+            color: #999;
+            padding: 40px 0;
+            font-size: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #1a73e8;
+            padding: 40px 0;
+        }
+
+        .error {
+            text-align: center;
+            color: #e74c3c;
+            padding: 40px 0;
         }
 
         @media (max-width: 600px) {
@@ -109,111 +149,113 @@
                 flex-direction: column;
             }
 
-            input {
+            .search-box input {
                 width: 100%;
-                box-sizing: border-box;
             }
 
-            button {
+            .search-box button {
                 width: 100%;
             }
 
             .container {
-                margin: 30px auto;
-                padding: 22px;
+                margin: 20px auto;
+                padding: 0 10px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>BookMind 图书查询平台</h1>
-        <p class="subtitle">输入书名、作者或关键词，快速查询图书信息</p>
+        <div class="header">
+            <h1>BookMind 图书查询平台</h1>
+            <p>基于阿里云生态的图书查询与数据可视化系统</p>
+        </div>
 
         <div class="search-box">
-            <input type="text" id="bookName" placeholder="请输入书名或作者">
-            <button onclick="searchBook()">查询</button>
+            <input type="text" id="keyword" placeholder="输入书名、作者、出版社或关键词">
+            <button onclick="searchBooks()">查询</button>
         </div>
 
-        <div id="result">
-            请输入关键词后点击查询。
-        </div>
-
-        <div class="tips">
-            当前版本为前端演示版，后续将接入数据库和后端接口。
+        <div class="result-area" id="result">
+            <div class="no-result">请输入关键词开始查询</div>
         </div>
     </div>
 
     <script>
-        // 临时测试数据：用于在没有后端接口时测试页面效果
-        const mockBooks = [
-            {
-                title: "活着",
-                author: "余华",
-                publisher: "作家出版社",
-                category: "文学"
-            },
-            {
-                title: "三体",
-                author: "刘慈欣",
-                publisher: "重庆出版社",
-                category: "科幻"
-            },
-            {
-                title: "Python编程：从入门到实践",
-                author: "Eric Matthes",
-                publisher: "人民邮电出版社",
-                category: "计算机"
-            },
-            {
-                title: "平凡的世界",
-                author: "路遥",
-                publisher: "北京十月文艺出版社",
-                category: "文学"
-            }
-        ];
+        // 你的函数计算接口地址，替换成你自己的
+        const API_BASE = "https://bookmind-yzujqqnphx.cn-hangzhou.fcapp.run";
 
-        function searchBook() {
-            const bookName = document.getElementById("bookName").value.trim();
+        function searchBooks() {
+            const keyword = document.getElementById("keyword").value.trim();
             const resultDiv = document.getElementById("result");
 
-            if (!bookName) {
-                alert("请输入书名或作者");
+            if (!keyword) {
+                resultDiv.innerHTML = '<div class="no-result">请输入关键词</div>';
                 return;
             }
 
-            resultDiv.innerText = "查询中...";
+            resultDiv.innerHTML = '<div class="loading">查询中...</div>';
 
-            // 现在先使用前端假数据查询，等你后端接口做好后，再改成 fetch 请求
-            const results = mockBooks.filter(book => {
-                return book.title.includes(bookName) ||
-                       book.author.includes(bookName) ||
-                       book.category.includes(bookName) ||
-                       book.publisher.includes(bookName);
-            });
+            const apiUrl = API_BASE + "/books?keyword=" + encodeURIComponent(keyword);
 
-            renderBooks(results);
+            fetch(apiUrl)
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error("接口返回错误：" + response.status);
+                    }
+                    return response.json();
+                })
+                .then(function(result) {
+                    if (result.success && result.data && result.data.length > 0) {
+                        renderBooks(result.data, result.total);
+                    } else if (result.success && result.data && result.data.length === 0) {
+                        resultDiv.innerHTML = '<div class="no-result">未找到相关书籍，请尝试其他关键词</div>';
+                    } else {
+                        resultDiv.innerHTML = '<div class="error">查询失败：' + (result.message || "未知错误") + '</div>';
+                    }
+                })
+                .catch(function(error) {
+                    resultDiv.innerHTML = '<div class="error">查询失败，请检查网络或后端接口是否正常</div>';
+                    console.error("查询错误：", error);
+                });
         }
 
-        function renderBooks(books) {
+        function renderBooks(books, total) {
             const resultDiv = document.getElementById("result");
 
-            if (!books || books.length === 0) {
-                resultDiv.innerText = "未找到相关书籍";
-                return;
+            let html = '<div class="result-info">共找到 ' + total + ' 条结果，当前显示 ' + books.length + ' 条</div>';
+
+            for (var i = 0; i < books.length; i++) {
+                var book = books[i];
+                html += '<div class="book-card">';
+                html += '<div class="book-title">' + (book.title || "未知书名") + '</div>';
+                html += '<div class="book-info">';
+                html += '<span>作者：' + (book.author || "未知") + '</span>';
+                html += '<span>出版社：' + (book.publisher || "未知") + '</span>';
+                html += '<span>分类：' + (book.category || "未分类") + '</span>';
+                html += '<span>出版年份：' + (book.publish_year || "未知") + '</span>';
+                html += '</div>';
+                if (book.country || book.language) {
+                    html += '<div class="book-info" style="margin-top:4px">';
+                    html += '<span>国家/地区：' + (book.country || "未知") + '</span>';
+                    html += '<span>语言：' + (book.language || "未知") + '</span>';
+                    html += '</div>';
+                }
+                if (book.description) {
+                    html += '<div class="book-desc">' + book.description + '</div>';
+                }
+                html += '</div>';
             }
 
-            resultDiv.innerHTML = books.map(book => `
-                <div class="book-card">
-                    <div class="book-title">${book.title}</div>
-                    <div class="book-info">
-                        作者：${book.author || "未知"}<br>
-                        出版社：${book.publisher || "未知"}<br>
-                        分类：${book.category || "未分类"}
-                    </div>
-                </div>
-            `).join("");
+            resultDiv.innerHTML = html;
         }
+
+        // 回车键也能触发查询
+        document.getElementById("keyword").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                searchBooks();
+            }
+        });
     </script>
 </body>
 </html>
