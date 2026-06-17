@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>BookMind 图书查询平台</title>
+    <!-- 引入 ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -72,12 +74,13 @@
             background: #1557b0;
         }
 
-        /* ===== 新增筛选框样式 ===== */
+        /* ===== 筛选框样式 ===== */
         .filter-box {
             display: flex;
             justify-content: center;
             gap: 12px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
         .filter-box select {
@@ -94,6 +97,7 @@
             border-color: #1a73e8;
         }
 
+        /* ===== 结果区域 ===== */
         .result-area {
             background: #fff;
             padding: 24px;
@@ -116,6 +120,8 @@
             border: 1px solid #e8e8e8;
             border-radius: 8px;
             background: #fafbfc;
+            cursor: pointer;
+            transition: background 0.2s;
         }
 
         .book-card:hover {
@@ -166,6 +172,130 @@
             padding: 40px 0;
         }
 
+        /* ===== 分页样式 ===== */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 16px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .pagination button {
+            padding: 8px 18px;
+            font-size: 14px;
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .pagination span {
+            font-size: 14px;
+            color: #555;
+        }
+
+        /* ===== 弹窗样式 ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 28px;
+            border-radius: 12px;
+            max-width: 560px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1a73e8;
+            margin-bottom: 16px;
+        }
+
+        .modal-info {
+            color: #555;
+            line-height: 2;
+            font-size: 15px;
+        }
+
+        .modal-desc {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        /* ===== 图表区域样式 ===== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0 40px;
+        }
+
+        .chart-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .chart-box h3 {
+            text-align: center;
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 800px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 600px) {
             .search-box {
                 flex-direction: column;
@@ -177,6 +307,16 @@
 
             .search-box button {
                 width: 100%;
+            }
+
+            .filter-box {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .filter-box select {
+                width: 100%;
+                min-width: unset;
             }
 
             .container {
@@ -196,10 +336,10 @@
         <!-- 搜索框 -->
         <div class="search-box">
             <input type="text" id="keyword" placeholder="输入书名、作者、出版社或关键词">
-            <button onclick="searchBooks()">查询</button>
+            <button onclick="searchBooks(1)">查询</button>
         </div>
 
-        <!-- ===== 新增筛选框 ===== -->
+        <!-- 筛选框 -->
         <div class="filter-box">
             <select id="filterCategory">
                 <option value="">全部分类</option>
@@ -212,34 +352,65 @@
             </select>
         </div>
 
+        <!-- 结果区域 -->
         <div class="result-area" id="result">
-            <div class="no-result">请输入关键词开始查询</div>
+            <div class="no-result">请输入关键词或选择筛选条件开始查询</div>
+        </div>
+
+        <!-- 分页区域 -->
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- ===== 图表区域（放在另一个 container 或同一个） ===== -->
+    <div class="container">
+        <h2 style="text-align:center; color:#1a73e8; margin:30px 0 20px;">图书数据可视化</h2>
+        <div class="charts-grid">
+            <div class="chart-box">
+                <h3>分类分布</h3>
+                <div id="chartCategory" style="width:100%; height:300px;"></div>
+            </div>
+            <div class="chart-box">
+                <h3>出版社 Top 10</h3>
+                <div id="chartPublisher" style="width:100%; height:300px;"></div>
+            </div>
+            <div class="chart-box">
+                <h3>出版年份趋势</h3>
+                <div id="chartYear" style="width:100%; height:300px;"></div>
+            </div>
+            <div class="chart-box">
+                <h3>国家/地区分布</h3>
+                <div id="chartCountry" style="width:100%; height:300px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 详情弹窗 ===== -->
+    <div class="modal" id="detailModal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
         </div>
     </div>
 
     <script>
-        // 你的函数计算接口地址，替换成你自己的
+        // ========== 配置 ==========
         const API_BASE = "https://bookmind-yzujqqnphx.cn-hangzhou.fcapp.run";
 
-        // ===== 加载筛选选项 =====
+        // ========== 分页全局变量 ==========
+        var currentPage = 1;
+        var currentPageSize = 20;
+        var currentTotal = 0;
+
+        // ========== 加载筛选选项（使用 /filters 接口） ==========
         function loadFilters() {
-            fetch(API_BASE + "/books?keyword=")
+            fetch(API_BASE + "/filters")
                 .then(function(response) { return response.json(); })
                 .then(function(result) {
-                    if (result.success && result.data) {
-                        // 提取所有不重复的分类
-                        var categories = {};
-                        var publishers = {};
-                        var countries = {};
-                        for (var i = 0; i < result.data.length; i++) {
-                            var b = result.data[i];
-                            if (b.category) categories[b.category] = true;
-                            if (b.publisher) publishers[b.publisher] = true;
-                            if (b.country) countries[b.country] = true;
-                        }
-                        fillSelect("filterCategory", Object.keys(categories).sort());
-                        fillSelect("filterPublisher", Object.keys(publishers).sort());
-                        fillSelect("filterCountry", Object.keys(countries).sort());
+                    if (result.success) {
+                        fillSelect("filterCategory", result.categories || []);
+                        fillSelect("filterPublisher", result.publishers || []);
+                        fillSelect("filterCountry", result.countries || []);
+                        // 年份也可选，但我们暂时不添加，需要的话可加第四个下拉
                     }
                 })
                 .catch(function(err) {
@@ -249,6 +420,7 @@
 
         function fillSelect(id, items) {
             var select = document.getElementById(id);
+            // 保留第一个“全部”选项（已存在）
             for (var i = 0; i < items.length; i++) {
                 var opt = document.createElement("option");
                 opt.value = items[i];
@@ -257,22 +429,29 @@
             }
         }
 
-        // ===== 修改后的 searchBooks（支持筛选） =====
-        function searchBooks() {
+        // ========== 搜索函数（支持分页） ==========
+        function searchBooks(page) {
+            if (!page) page = 1;
+            currentPage = page;
+
             var keyword = document.getElementById("keyword").value.trim();
             var category = document.getElementById("filterCategory").value;
             var publisher = document.getElementById("filterPublisher").value;
             var country = document.getElementById("filterCountry").value;
             var resultDiv = document.getElementById("result");
 
+            // 检查是否有查询条件
             if (!keyword && !category && !publisher && !country) {
                 resultDiv.innerHTML = '<div class="no-result">请输入关键词或选择筛选条件</div>';
+                document.getElementById("pagination").innerHTML = '';
                 return;
             }
 
             resultDiv.innerHTML = '<div class="loading">查询中...</div>';
 
             var params = [];
+            params.push("page=" + currentPage);
+            params.push("pageSize=" + currentPageSize);
             if (keyword) params.push("keyword=" + encodeURIComponent(keyword));
             if (category) params.push("category=" + encodeURIComponent(category));
             if (publisher) params.push("publisher=" + encodeURIComponent(publisher));
@@ -287,28 +466,35 @@
                 })
                 .then(function(result) {
                     if (result.success && result.data && result.data.length > 0) {
+                        currentTotal = result.total || 0;
                         renderBooks(result.data, result.total);
+                        renderPagination();
                     } else if (result.success) {
                         resultDiv.innerHTML = '<div class="no-result">未找到相关书籍</div>';
+                        document.getElementById("pagination").innerHTML = '';
                     } else {
                         resultDiv.innerHTML = '<div class="error">查询失败：' + (result.message || "未知错误") + '</div>';
+                        document.getElementById("pagination").innerHTML = '';
                     }
                 })
                 .catch(function(error) {
                     resultDiv.innerHTML = '<div class="error">查询失败，请检查网络或后端接口</div>';
                     console.error("查询错误：", error);
+                    document.getElementById("pagination").innerHTML = '';
                 });
         }
 
-        // ===== 渲染书籍（保持不变） =====
+        // ========== 渲染书籍列表（添加点击事件） ==========
         function renderBooks(books, total) {
             const resultDiv = document.getElementById("result");
 
-            let html = '<div class="result-info">共找到 ' + total + ' 条结果，当前显示 ' + books.length + ' 条</div>';
+            var html = '<div class="result-info">共找到 ' + total + ' 条结果，当前显示 ' + books.length + ' 条</div>';
 
             for (var i = 0; i < books.length; i++) {
                 var book = books[i];
-                html += '<div class="book-card">';
+                // 对 book 对象进行 JSON 转义，避免单引号冲突
+                var bookJson = JSON.stringify(book).replace(/'/g, "\\'");
+                html += '<div class="book-card" onclick="showDetail(' + bookJson + ')">';
                 html += '<div class="book-title">' + (book.title || "未知书名") + '</div>';
                 html += '<div class="book-info">';
                 html += '<span>作者：' + (book.author || "未知") + '</span>';
@@ -331,14 +517,136 @@
             resultDiv.innerHTML = html;
         }
 
-        // ===== 页面加载完成后加载筛选选项 =====
-        loadFilters();
+        // ========== 渲染分页按钮 ==========
+        function renderPagination() {
+            var totalPages = Math.ceil(currentTotal / currentPageSize);
+            var paginationDiv = document.getElementById("pagination");
 
-        // 回车键触发查询
+            if (totalPages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+
+            var html = '';
+            html += '<button onclick="searchBooks(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + '>上一页</button>';
+            html += '<span>第 ' + currentPage + ' / ' + totalPages + ' 页</span>';
+            html += '<button onclick="searchBooks(' + (currentPage + 1) + ')" ' + (currentPage >= totalPages ? 'disabled' : '') + '>下一页</button>';
+            html += '<span>共 ' + currentTotal + ' 条</span>';
+
+            paginationDiv.innerHTML = html;
+        }
+
+        // ========== 详情弹窗 ==========
+        function showDetail(book) {
+            var modal = document.getElementById("detailModal");
+            var body = document.getElementById("modalBody");
+
+            body.innerHTML =
+                '<div class="modal-title">' + (book.title || "未知") + '</div>' +
+                '<div class="modal-info">' +
+                '作者：' + (book.author || "未知") + '<br>' +
+                '出版社：' + (book.publisher || "未知") + '<br>' +
+                '分类：' + (book.category || "未分类") + '<br>' +
+                '出版年份：' + (book.publish_year || "未知") + '<br>' +
+                '国家/地区：' + (book.country || "未知") + '<br>' +
+                '语言：' + (book.language || "未知") + '<br>' +
+                'ISBN：' + (book.isbn || "暂无") +
+                '</div>' +
+                '<div class="modal-desc">' + (book.description || "暂无简介") + '</div>';
+
+            modal.classList.add("active");
+        }
+
+        function closeModal(event) {
+            if (!event || event.target.id === "detailModal" || event.target.className === "modal-close") {
+                document.getElementById("detailModal").classList.remove("active");
+            }
+        }
+
+        // ========== ECharts 图表加载 ==========
+        function loadCharts() {
+            fetch(API_BASE + "/stats")
+                .then(function(response) { return response.json(); })
+                .then(function(result) {
+                    if (!result.success) return;
+
+                    // 分类柱状图
+                    var chartCat = echarts.init(document.getElementById("chartCategory"));
+                    chartCat.setOption({
+                        tooltip: { trigger: 'axis' },
+                        xAxis: { type: 'category', data: result.categoryStats.map(function(r) { return r.name; }) },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'bar',
+                            data: result.categoryStats.map(function(r) { return r.value; }),
+                            itemStyle: { color: '#1a73e8' }
+                        }]
+                    });
+
+                    // 出版社饼图
+                    var chartPub = echarts.init(document.getElementById("chartPublisher"));
+                    chartPub.setOption({
+                        tooltip: { trigger: 'item' },
+                        series: [{
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            data: result.publisherStats.map(function(r) { return { name: r.name, value: r.value }; })
+                        }]
+                    });
+
+                    // 年份折线图
+                    var chartYear = echarts.init(document.getElementById("chartYear"));
+                    chartYear.setOption({
+                        tooltip: { trigger: 'axis' },
+                        xAxis: { type: 'category', data: result.yearStats.map(function(r) { return r.year; }) },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'line',
+                            data: result.yearStats.map(function(r) { return r.count; }),
+                            smooth: true,
+                            itemStyle: { color: '#34a853' }
+                        }]
+                    });
+
+                    // 国家柱状图
+                    var chartCountry = echarts.init(document.getElementById("chartCountry"));
+                    chartCountry.setOption({
+                        tooltip: { trigger: 'axis' },
+                        xAxis: { type: 'category', data: result.countryStats.map(function(r) { return r.name; }) },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'bar',
+                            data: result.countryStats.map(function(r) { return r.value; }),
+                            itemStyle: { color: '#fbbc05' }
+                        }]
+                    });
+                })
+                .catch(function(err) {
+                    console.error("加载图表失败", err);
+                });
+        }
+
+        // ========== 页面加载完成后执行 ==========
+        loadFilters();
+        loadCharts();
+
+        // 回车键触发查询（重置到第一页）
         document.getElementById("keyword").addEventListener("keypress", function(e) {
             if (e.key === "Enter") {
-                searchBooks();
+                searchBooks(1);
             }
+        });
+
+        // 窗口大小改变时重新调整图表大小（可选）
+        window.addEventListener('resize', function() {
+            var charts = ['chartCategory', 'chartPublisher', 'chartYear', 'chartCountry'];
+            charts.forEach(function(id) {
+                var dom = document.getElementById(id);
+                if (dom) {
+                    var instance = echarts.getInstanceByDom(dom);
+                    if (instance) instance.resize();
+                }
+            });
         });
     </script>
 </body>
